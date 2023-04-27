@@ -23,7 +23,9 @@ if(len(list_of_resources) > 0 ):
     # for f in range(1,99,1):
     #     osc.modify_waveform_duty(f)
     # osc.set_vertical_scale(1,2.5)
-    # osc.set_horizontal_scale(100e-6)
-    osc.set_aquire_mode('hresolution')
-
+#    osc.set_horizontal_scale(150e-6)
+#    osc.set_acquire_mode('hresolution')
+#    print(osc.get_trigger_state())
+#    osc.set_trigger_mode("EDGE")
+    print(osc.measure_VPP(1))
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

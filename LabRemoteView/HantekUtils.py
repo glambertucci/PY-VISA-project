@@ -1,19 +1,26 @@
 class HantekOscilloscopeWG:
     def __init__(self, resource_manager):
         self.hantek = resource_manager
+        self.acquire_modes = ['NORMAL', 'AVERAGE' , 'PEAK', 'HRESOLUTION']
+        self.trigger_modes = ['EDGE', 'PULSE', 'TV', 'SLOPE', 'TIMEOUT', 'WINDOW', 'PATTERN', 'INTERVAL', 'UNDERTHROW', 'UART', 'LIN', 'CAN' ,'SPI', 'IIC']
         if self.hantek.query(':DDS:SWITch?') == 'OFF':
             self.hantek.write(':DDS:SWITch 1')
-        self.aquire_modes = ['NORMAL','AVERAGE','PEAK','HRESOLUTION']
+        self.set_trigger_mode('EDGE')
+        self.hantek.write('MEASure:ENABle ON')
+
+    # Setters
     def set_vertical_scale(self, channel: int, scale: float):
         self.hantek.write(':CHANnel' + str(channel) + ':SCALe ' + "{:.3e}".format(scale))
 
     def set_horizontal_scale(self, scale: float):
         self.hantek.write('TIMebase:SCALe ' + "{:.3e}".format(scale))
-    def set_aquire_mode(self,mode:str):
-        if mode.upper() in self.aquire_modes:
+
+    def set_acquire_mode(self, mode: str):
+        if mode.upper() in self.acquire_modes:
             self.hantek.write(':ACQuire:TYPE '+mode)
-            if(mode.upper() == 'AVERAGE'):
+            if mode.upper() == 'AVERAGE':
                 self.hantek.write(':ACQuire:COUNt 128')
+
     def set_probe(self, channel: int = 1, x1: bool = True, x10: bool = False):
         invalid = x1 ^ x10
         if not invalid:
@@ -32,6 +39,23 @@ class HantekOscilloscopeWG:
             self.hantek.write(':DDS:AMP ' + str(vpp))
             self.hantek.write(':DDS:DUTY ' + str(duty))
 
+    def set_trigger_mode(self, mode):
+        if mode.upper() in self.trigger_modes:
+            self.hantek.write('TRIGger:MODE ' + str(mode))
+
+    def set_meas_channel(self, channel):
+        self.hantek.write('MEASure:SOURce CHANnel' + str(channel))
+
+    def measure_VPP(self, channel):
+        self.hantek.write('MEASure:CHANnel' + str(channel) + ':ITEM VPP')
+
+        return self.hantek.query('MEASure:CHANnel' + str(channel) + ':ITEM? VPP')
+
+    #  Getters
+    def get_trigger_state(self):
+        return self.hantek.query('TRIGger:STATus?')
+
+    # Modify
     def modify_waveform_frequency(self, frequency: int):
         self.hantek.write(':DDS:FREQ ' + str(frequency))
 
