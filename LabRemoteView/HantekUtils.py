@@ -1,23 +1,33 @@
+import time
+
+
 class HantekOscilloscopeWG:
     def __init__(self, resource_manager):
         self.hantek = resource_manager
-        self.acquire_modes = ['NORMAL', 'AVERAGE' , 'PEAK', 'HRESOLUTION']
-        self.trigger_modes = ['EDGE', 'PULSE', 'TV', 'SLOPE', 'TIMEOUT', 'WINDOW', 'PATTERN', 'INTERVAL', 'UNDERTHROW', 'UART', 'LIN', 'CAN' ,'SPI', 'IIC']
+        self.acquire_modes = ['NORMAL', 'AVERAGE', 'PEAK', 'HRESOLUTION']
+        self.trigger_modes = ['EDGE', 'PULSE', 'TV', 'SLOPE', 'TIMEOUT', 'WINDOW', 'PATTERN', 'INTERVAL', 'UNDERTHROW',
+                              'UART', 'LIN', 'CAN', 'SPI', 'IIC']
         if self.hantek.query(':DDS:SWITch?') == 'OFF':
             self.hantek.write(':DDS:SWITch 1')
         self.set_trigger_mode('EDGE')
         self.hantek.write('MEASure:ENABle ON')
+        self.horizontal_scale = [8.e-01, 3.2e-01, 1.6e-01, 8.e-02, 3.2e-02, 1.6e-02,
+                                 8.e-03, 3.2e-03, 1.6e-03, 8.e-04, 3.2e-04, 1.6e-04,
+                                 8.e-05, 3.2e-05, 1.6e-05, 8e-06, 3.2e-06, 1.6e-06,
+                                 8.e-07, 3.2e-07, 1.6e-07]
+        self.vertical_scale = [10 * 8, 5 * 8, 2 * 8, 1 * 8, 10e-1 * 8, 5e-1 * 8, 2e-1 * 8, 1e-1 * 8, 5e-2 * 8, 2e-2 * 8,
+                               1e-2 * 8, 5e-3 * 8, 2e-3 * 8]
 
     # Setters
     def set_vertical_scale(self, channel: int, scale: float):
-        self.hantek.write(':CHANnel' + str(channel) + ':SCALe ' + "{:.3e}".format(scale))
+        self.hantek.write(':CHANnel' + str(channel) + ':SCALe ' + "{:.3e}".format(scale / 8))
 
     def set_horizontal_scale(self, scale: float):
-        self.hantek.write('TIMebase:SCALe ' + "{:.3e}".format(scale))
+        self.hantek.write('TIMebase:Range ' + "{:.3e}".format(scale))
 
     def set_acquire_mode(self, mode: str):
         if mode.upper() in self.acquire_modes:
-            self.hantek.write(':ACQuire:TYPE '+mode)
+            self.hantek.write(':ACQuire:TYPE ' + mode)
             if mode.upper() == 'AVERAGE':
                 self.hantek.write(':ACQuire:COUNt 128')
 
@@ -48,12 +58,18 @@ class HantekOscilloscopeWG:
 
     def measure_VPP(self, channel):
         self.hantek.write('MEASure:CHANnel' + str(channel) + ':ITEM VPP')
-
         return self.hantek.query('MEASure:CHANnel' + str(channel) + ':ITEM? VPP')
+
+    def measure_VP(self, channel):
+        self.hantek.write('MEASure:CHANnel' + str(channel) + ':ITEM VMAX')
+        return self.hantek.query('MEASure:CHANnel' + str(channel) + ':ITEM? VMAX')
 
     #  Getters
     def get_trigger_state(self):
         return self.hantek.query('TRIGger:STATus?')
+
+    def get_vertical_scale(self, channel: int):
+        return self.hantek.query(':CHANnel' + str(channel) + ':SCALe?')
 
     # Modify
     def modify_waveform_frequency(self, frequency: int):
