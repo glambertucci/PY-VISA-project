@@ -2,44 +2,43 @@
 import numpy as np
 
 
-def bode_diagram(oscilloscope, fi: float, fo: float, vi: float, channel):
-    frequencies = np.logspace(np.log10(fi), np.log10(fo), num=20)
+def bode_diagram(oscilloscope, fi: float, fo: float, vi: float, channel,number_of_points=20):
+    frequencies = np.logspace(np.log10(fi), np.log10(fo), num=number_of_points)
     oscilloscope.set_waveform('SINE', vi, int(fi))
     measurements = []
+    freqs = []
     for freq in frequencies:
-        print('Doing frequency: ', freq)
         oscilloscope.modify_waveform_frequency(freq)
         adjust_horizontal_size(freq, oscilloscope, )
-        measurements.append([freq, adjust_vertical_size_and_measure(oscilloscope, channel)])
-    return measurements
+        measurement = adjust_vertical_size_and_measure(oscilloscope, channel)
+        db_measurement = 20*np.log10(measurement / vi)
+        measurements.append(db_measurement)
+        freqs.append(int(freq))
+    return measurements, freqs
 
 
 def adjust_horizontal_size(freq, osc):
     best_size = 2 / freq
     actual_size = find_nearest(osc.horizontal_scale, best_size)
     osc.set_horizontal_scale(actual_size)
-    print('Did horizontal adjustment')
 
 
 def adjust_vertical_size_and_measure(osc, channel):
-    vp = float(osc.measure_VP(channel))
+    vp = float(osc.measure_VPP(channel))
     vs = float(osc.get_vertical_scale(channel)) * 8
-    print(vs)
     clipping = True
     could_zoom_in = True
     meas = -1
     if vp < vs * 0.98:
         clipping = False
-        print('Its not clipping')
-    if vp > vs * 0.5:
+    if vp > vs * 0.6:
         could_zoom_in = False
-        print('It doesnt need to be zoomed in')
     if clipping:
-        print('Zooming out')
         meas = zoom_out(osc, vs, channel)
     elif could_zoom_in:
-        print('Zooming in')
         meas = zoom_in(osc, vs, channel)
+    else:
+        meas = float(osc.measure_VPP(channel))
     return meas
 
 
@@ -55,7 +54,7 @@ def zoom_in(osc, vs, channel):
             i = i + 1
             actual_vs = osc.vertical_scale[i]
             osc.set_vertical_scale(channel, actual_vs)
-            vp = float(osc.measure_VP(channel))
+            vp = float(osc.measure_VPP(channel))
             if vp * 2 > actual_vs * 0.4:
                 not_done = False
     return vp
@@ -82,4 +81,7 @@ def zoom_out(osc, vs, channel):
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
-    return array[idx]
+    if array[idx] < value:
+        return array[idx-1]
+    else:
+        return array[idx]

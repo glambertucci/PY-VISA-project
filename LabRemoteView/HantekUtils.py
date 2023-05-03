@@ -58,7 +58,8 @@ class HantekOscilloscopeWG:
 
     def measure_VPP(self, channel):
         self.hantek.write('MEASure:CHANnel' + str(channel) + ':ITEM VPP')
-        return self.hantek.query('MEASure:CHANnel' + str(channel) + ':ITEM? VPP')
+        res = self.hantek.query('MEASure:CHANnel' + str(channel) + ':ITEM? VPP')
+        return res
 
     def measure_VP(self, channel):
         self.hantek.write('MEASure:CHANnel' + str(channel) + ':ITEM VMAX')
